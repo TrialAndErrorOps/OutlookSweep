@@ -1,27 +1,45 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Temporary Wayback Availability Probe</title>
-<style>body{font:17px/1.4 ui-monospace,Consolas,monospace;margin:20px;background:white;color:#111}pre{white-space:pre-wrap;word-break:break-word}</style>
-<pre id="out">Loading Wayback availability data...</pre>
+<title>Temporary Archived RSS Extractor</title>
+<style>body{font:15px/1.35 ui-monospace,Consolas,monospace;margin:18px;background:white;color:#111}pre{white-space:pre-wrap;word-break:break-word}</style>
+<pre id="out">Loading exact 2019 RSS snapshot...</pre>
 <script>
-var out=document.getElementById('out');out.textContent='';
+var out=document.getElementById('out');
 function add(s){out.textContent+=String(s)+'\n';}
-window.onerror=function(m,s,l,c){add('ONERROR '+m+' @ '+l+':'+c);};
-var pending=0;
-function ask(label,url,timestamp){
- pending++;
- var cb='cb_'+Math.random().toString(36).slice(2);
- window[cb]=function(data){add('\n### '+label+' @ '+timestamp+' ###\n'+JSON.stringify(data,null,2));delete window[cb];pending--;};
- var s=document.createElement('script');
- s.src='https://archive.org/wayback/available?url='+encodeURIComponent(url)+'&timestamp='+timestamp+'&callback='+cb;
- s.onerror=function(){add('\n### '+label+' ERROR loading JSONP ###');pending--;};
- document.head.appendChild(s);
-}
-var rss='https://www.omnycontent.com/d/playlist/eea6f6e8-242e-442d-826d-a59b004c5ec9/facea92d-da32-4a67-be02-a59b004f7a4c/024e8d7b-8c4f-4e65-ae81-a59b00511905/podcast.rss';
-var rss2='https://omny.fm/shows/the-program/playlists/podcast.rss';
-var podbay='https://podbay.fm/p/the-program/e/1555524951';
-['20190418','20190425','20190515','20190601','20200101','20210101'].forEach(function(ts){ask('OMNYCONTENT RSS',rss,ts);});
-['20190418','20190515','20200101'].forEach(function(ts){ask('OMNY PAGE RSS',rss2,ts);});
-['20190418','20190515','20200101','20210101'].forEach(function(ts){ask('PODBAY EPISODE',podbay,ts);});
-setTimeout(function(){add('\nTIMEOUT STATUS pending='+pending);},12000);
+window.onerror=function(m,s,l,c){add('\nONERROR '+m+' @ '+l+':'+c);};
+(async function(){
+ out.textContent='JAVASCRIPT STARTED\n';
+ var replay='https://web.archive.org/web/20190417182220id_/http://www.omnycontent.com:80/d/playlist/eea6f6e8-242e-442d-826d-a59b004c5ec9/facea92d-da32-4a67-be02-a59b004f7a4c/024e8d7b-8c4f-4e65-ae81-a59b00511905/podcast.rss';
+ add('REPLAY: '+replay);
+ try{
+  var r=await fetch(replay);
+  add('STATUS: '+r.status+' '+r.statusText);
+  var xml=await r.text();
+  add('BYTES: '+xml.length);
+  var doc=new DOMParser().parseFromString(xml,'application/xml');
+  var items=Array.from(doc.querySelectorAll('item'));
+  add('ITEMS: '+items.length);
+  var hits=items.filter(function(item){var t=item.textContent||'';return /Frank Boal|Robert Kraft|31:07|1555524951/i.test(t);});
+  add('HITS: '+hits.length);
+  hits.slice(0,30).forEach(function(item,i){
+   add('\n========== HIT '+(i+1)+' ==========');
+   var title=item.querySelector('title');
+   var date=item.querySelector('pubDate');
+   var guid=item.querySelector('guid');
+   var link=item.querySelector('link');
+   var enc=item.querySelector('enclosure');
+   var desc=item.querySelector('description');
+   add('TITLE: '+(title?title.textContent:''));
+   add('DATE: '+(date?date.textContent:''));
+   add('GUID: '+(guid?guid.textContent:''));
+   add('LINK: '+(link?link.textContent:''));
+   add('ENCLOSURE: '+(enc?enc.getAttribute('url'):''));
+   add('TYPE: '+(enc?enc.getAttribute('type'):''));
+   add('LENGTH: '+(enc?enc.getAttribute('length'):''));
+   add('DESCRIPTION: '+(desc?desc.textContent:'').replace(/\s+/g,' ').slice(0,1200));
+   add('RAW: '+new XMLSerializer().serializeToString(item).slice(0,8000));
+  });
+  if(!hits.length){add('\nFIRST 15000 BYTES:\n'+xml.slice(0,15000));}
+ }catch(e){add('\nFETCH ERROR: '+e.name+' '+e.message+'\n'+e.stack);}
+})();
 </script>
