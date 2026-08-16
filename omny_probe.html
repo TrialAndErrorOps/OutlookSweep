@@ -15,7 +15,7 @@ async function cdx(url,from='2019',to='2021'){
 }
 function decode(s=''){const d=document.createElement('textarea');d.innerHTML=s;return d.value;}
 function tag(item,name){const m=item.match(new RegExp('<'+name+'(?:\\s[^>]*)?>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/'+name+'>','i'));return m?decode(m[1].trim()):'';}
-function attr(item,name,attr){const m=item.match(new RegExp('<'+name+'[^>]*\\s'+attr+'=["\\']([^"\\']+)','i'));return m?decode(m[1]):'';}
+function attr(item,name,attribute){const m=item.match(new RegExp("<"+name+"[^>]*\\s"+attribute+"=[\\\"']([^\\\"']+)",'i'));return m?decode(m[1]):'';}
 function showItem(item,label){
  line('\n*** '+label+' ***');
  line('TITLE: '+tag(item,'title'));
