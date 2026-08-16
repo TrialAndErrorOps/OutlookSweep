@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Temporary Omny Probe</title>
+<style>body{font:16px/1.4 ui-monospace,Consolas,monospace;margin:20px;background:#fff;color:#111}pre{white-space:pre-wrap;word-break:break-word}</style>
+<pre id="out">Starting Omny probe...</pre>
+<script>
+const out=document.getElementById('out');
+const base='https://api.omny.fm/orgs/eea6f6e8-242e-442d-826d-a59b004c5ec9/playlists/024e8d7b-8c4f-4e65-ae81-a59b00511905/clips/v2';
+const line=(s='')=>{out.textContent+=s+'\n';};
+const summary=c=>({Id:c?.Id,Title:c?.Title,PublishedUtc:c?.PublishedUtc,PublishedUrl:c?.PublishedUrl,AudioUrl:c?.AudioUrl,DurationSeconds:c?.DurationSeconds});
+async function get(url){const r=await fetch(url); const text=await r.text(); if(!r.ok) throw new Error(r.status+' '+text.slice(0,500)); return JSON.parse(text);}
+(async()=>{
+ try{
+  out.textContent='';
+  const first=await get(base+'?pageSize=1000');
+  line('TOP-LEVEL KEYS: '+Object.keys(first).join(', '));
+  line('TotalCount: '+first.TotalCount+'  Clips.length: '+(first.Clips||[]).length);
+  line('FIRST: '+JSON.stringify(summary(first.Clips?.[0]),null,2));
+  line('LAST: '+JSON.stringify(summary(first.Clips?.at(-1)),null,2));
+  const anchor=first.Clips?.at(-1)?.Id;
+  for(const d of ['BeforeExclusive','AfterExclusive','BeforeInclusive','AfterInclusive']){
+   try{
+    const j=await get(base+'?clipId='+encodeURIComponent(anchor)+'&direction='+d+'&pageSize=5');
+    line('\nDIRECTION '+d+' count='+(j.Clips||[]).length);
+    line(' first='+JSON.stringify(summary(j.Clips?.[0])));
+    line(' last ='+JSON.stringify(summary(j.Clips?.at(-1))));
+   }catch(e){line('\nDIRECTION '+d+' ERROR '+e);}
+  }
+ }catch(e){out.textContent='ERROR\n'+e.stack;}
+})();
+</script>
