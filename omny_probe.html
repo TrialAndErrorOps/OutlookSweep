@@ -1,24 +1,27 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Temporary Omny Archive Probe</title>
-<style>body{font:16px/1.35 ui-monospace,Consolas,monospace;margin:18px;background:white;color:#111}pre{white-space:pre-wrap;word-break:break-word}</style>
-<pre id="out">HTML loaded. JavaScript has not started.</pre>
+<title>Temporary Wayback Availability Probe</title>
+<style>body{font:17px/1.4 ui-monospace,Consolas,monospace;margin:20px;background:white;color:#111}pre{white-space:pre-wrap;word-break:break-word}</style>
+<pre id="out">Loading Wayback availability data...</pre>
 <script>
-var out=document.getElementById('out');
-window.onerror=function(message,source,line,column,error){out.textContent+='\nONERROR: '+message+' @ '+line+':'+column;};
+var out=document.getElementById('out');out.textContent='';
 function add(s){out.textContent+=String(s)+'\n';}
-(async function(){
- out.textContent='JAVASCRIPT STARTED\n';
- var rss='https://www.omnycontent.com/d/playlist/eea6f6e8-242e-442d-826d-a59b004c5ec9/facea92d-da32-4a67-be02-a59b004f7a4c/024e8d7b-8c4f-4e65-ae81-a59b00511905/podcast.rss';
- var q='https://web.archive.org/cdx/search/cdx?url='+encodeURIComponent(rss)+'&from=2018&to=2022&output=json&fl=timestamp,original,statuscode,mimetype,digest,length&filter=statuscode:200&collapse=digest';
- add('REQUEST: '+q);
- try{
-  var r=await fetch(q);
-  add('STATUS: '+r.status+' '+r.statusText);
-  var t=await r.text();
-  add('BYTES: '+t.length);
-  add(t.slice(0,12000));
- }catch(e){add('FETCH ERROR: '+e.name+' '+e.message+'\n'+e.stack);}
- add('DONE');
-})();
+window.onerror=function(m,s,l,c){add('ONERROR '+m+' @ '+l+':'+c);};
+var pending=0;
+function ask(label,url,timestamp){
+ pending++;
+ var cb='cb_'+Math.random().toString(36).slice(2);
+ window[cb]=function(data){add('\n### '+label+' @ '+timestamp+' ###\n'+JSON.stringify(data,null,2));delete window[cb];pending--;};
+ var s=document.createElement('script');
+ s.src='https://archive.org/wayback/available?url='+encodeURIComponent(url)+'&timestamp='+timestamp+'&callback='+cb;
+ s.onerror=function(){add('\n### '+label+' ERROR loading JSONP ###');pending--;};
+ document.head.appendChild(s);
+}
+var rss='https://www.omnycontent.com/d/playlist/eea6f6e8-242e-442d-826d-a59b004c5ec9/facea92d-da32-4a67-be02-a59b004f7a4c/024e8d7b-8c4f-4e65-ae81-a59b00511905/podcast.rss';
+var rss2='https://omny.fm/shows/the-program/playlists/podcast.rss';
+var podbay='https://podbay.fm/p/the-program/e/1555524951';
+['20190418','20190425','20190515','20190601','20200101','20210101'].forEach(function(ts){ask('OMNYCONTENT RSS',rss,ts);});
+['20190418','20190515','20200101'].forEach(function(ts){ask('OMNY PAGE RSS',rss2,ts);});
+['20190418','20190515','20200101','20210101'].forEach(function(ts){ask('PODBAY EPISODE',podbay,ts);});
+setTimeout(function(){add('\nTIMEOUT STATUS pending='+pending);},12000);
 </script>
